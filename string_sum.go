@@ -2,6 +2,10 @@ package string_sum
 
 import (
 	"errors"
+	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 //use these errors as appropriate, wrapping them with fmt.Errorf function
@@ -23,5 +27,79 @@ var (
 // Use the errors defined above as described, again wrapping into fmt.Errorf
 
 func StringSum(input string) (output string, err error) {
-	return "", nil
+	input = strings.TrimSpace(input)
+	if len(input) == 0 {
+		return "", fmt.Errorf("e1: %w", errorEmptyInput)
+	}
+	lessPatern := `^[\s\+-]{0,}\d{1,}$`
+	re := regexp.MustCompile(lessPatern)
+	less := re.FindAllString(input, 1)
+	if len(less) == 1 {
+		return "", fmt.Errorf("e2: %w", errorNotTwoOperands)
+	}
+	pattern := `^[\s\+-]{0,}[0-9a-z]{1,}[\s\+-]{0,}[0-9a-z]{1,}`
+	re = regexp.MustCompile(pattern)
+	remain := re.ReplaceAllString(input, "")
+	if len(remain) > 0 {
+		return "", fmt.Errorf("e3: %w", errorNotTwoOperands)
+	}
+	var x, y int
+	var started, signMinus, definedX bool
+
+	for _, v := range input {
+		val := string(v)
+		if !definedX {
+			_, err := strconv.Atoi(val)
+			if err != nil {
+				if val == "-" {
+					signMinus = true
+				} else if val == "+" || val == " " {
+				} else {
+					return "", fmt.Errorf("e3: %w",
+						&strconv.NumError{
+							Func: "Atoi",
+							Num:  strconv.Itoa(x) + val,
+							Err:  strconv.ErrSyntax,
+						})
+				}
+				if started {
+					definedX = true
+				}
+			} else {
+				x, _ = strconv.Atoi(strconv.Itoa(x) + val)
+				if signMinus {
+					x = -x
+				} else {
+					x = x
+				}
+				signMinus = false
+				started = true
+			}
+		} else if definedX {
+			_, err := strconv.Atoi(val)
+			if err != nil {
+				if val == "-" {
+					signMinus = true
+				} else if val == "+" || val == " " {
+				} else {
+					return "", fmt.Errorf("e3: %w",
+						&strconv.NumError{
+							Func: "Atoi",
+							Num:  strconv.Itoa(y) + val,
+							Err:  strconv.ErrSyntax,
+						})
+				}
+			} else {
+				y, _ = strconv.Atoi(strconv.Itoa(y) + val)
+				if signMinus {
+					y = -y
+				} else {
+					y = y
+				}
+				signMinus = false
+
+			}
+		}
+	}
+	return strconv.Itoa(x + y), nil
 }
